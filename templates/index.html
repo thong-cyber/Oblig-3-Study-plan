@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Study Planner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header>
+  <h1>Study Planner</h1>
+  <p>Add your deadlines, and get a daily schedule that keeps every one on track.</p>
+</header>
+
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }}" role="status">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <section class="card">
+    <h2>Add a task</h2>
+    <form method="post" action="{{ url_for('add') }}" class="grid-form">
+      <label>Name
+        <input name="name" required="" maxlength="80" placeholder="e.g. Calculus exam">
+      </label>
+      <label>Due date
+        <input type="date" name="due" required="" min="{{ today.isoformat() }}">
+      </label>
+      <label>Hours needed
+        <input type="number" name="hours" required="" min="0.5" max="500" step="0.5" placeholder="20">
+      </label>
+      <label>Priority
+        <select name="priority">
+          <option value="1">Low</option>
+          <option value="2" selected="">Medium</option>
+          <option value="3">High</option>
+        </select>
+      </label>
+      <button type="submit">Add task</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Your tasks</h2>
+    {% if not tasks %}
+      <p class="muted">No tasks yet. Add your first one above.</p>
+    {% else %}
+      <div class="task-list">
+      {% for t in tasks %}
+        {% set dl = days_left(t) %}
+        <article class="task {% if dl < 0 %}overdue{% elif dl <= 3 %}soon{% endif %}">
+          <div class="task-head">
+            <h3>{{ t.name }}</h3>
+            <span class="badge p{{ t.priority }}">{{ ['', 'Low', 'Medium', 'High'][t.priority] }}</span>
+          </div>
+          <p class="muted">
+            Due {{ t.due }} · {% if dl < 0 %}overdue{% elif dl == 0 %}today{% else %}{{ dl }} day{{ '' if dl == 1 else 's' }} left{% endif %}
+          </p>
+          <div class="bar" role="progressbar" aria-valuenow="{{ percent(t) }}" aria-valuemin="0" aria-valuemax="100">
+            <div style="width: percent(t) "></div>
+          </div>
+          <p class="muted">{{ t.done | fmt }} / {{ t.hours | fmt }} h done ({{ percent(t) }}%)</p>
+          <div class="task-actions">
+            <form method="post" action="{{ url_for('log', task_id=t.id) }}" class="inline">
+              <input type="number" name="hours" min="0.5" max="24" step="0.5" placeholder="hours" required="" aria-label="Hours studied">
+              <button type="submit">Log hours</button>
+            </form>
+            <form method="post" action="{{ url_for('delete', task_id=t.id) }}" class="inline" onsubmit="return confirm('Remove this task?')">
+              <button type="submit" class="danger">Remove</button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Your plan</h2>
+    <form method="get" action="{{ url_for('index') }}" class="inline plan-form">
+      <label>Hours per day
+        <input type="number" name="per_day" value="{{ per_day | fmt }}" min="0.5" max="16" step="0.5">
+      </label>
+      <label>Days ahead
+        <input type="number" name="days" value="{{ horizon }}" min="1" max="30">
+      </label>
+      <button type="submit">Update plan</button>
+    </form>
+
+    {% for w in warnings %}
+      <div class="flash error">⚠ {{ w }}</div>
+    {% endfor %}
+
+    {% if not tasks %}
+      <p class="muted">Add a task to see your schedule.</p>
+    {% else %}
+      <div class="plan">
+      {% for day, slots in plan %}
+        <div class="day">
+          <div class="day-label">
+            <strong>{{ day.strftime('%a') }}</strong>
+            <span>{{ day.strftime('%d %b') }}</span>
+          </div>
+          <div class="slots">
+            {% if slots %}
+              {% for t, h in slots %}
+                <span class="slot p{{ t.priority }}">{{ t.name }} · {{ h | fmt }}h</span>
+              {% endfor %}
+            {% else %}
+              <span class="muted">Free day</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+
+</body></html>
