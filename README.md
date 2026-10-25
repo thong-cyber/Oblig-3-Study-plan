@@ -7,8 +7,18 @@ the app builds a daily plan, tracks your progress and warns you when a deadline 
 ## Run it
 
 ```
-pip install -r requirements.txt
-python app.py
+1. Go in to folder (cd) with app.py
+   Can check with ls
+2. Create virtual envirorment 
+   python3 -m venv .venv
+   source .venv/bin/activate
+      both in terminal
+3. Install flask
+   pip install -r requirements.txt
+      In terminal
+4. Start app
+   python app.py
+      in terminal
 ```
 
 Then open http://127.0.0.1:5000
